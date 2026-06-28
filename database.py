@@ -37,10 +37,14 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # 테이블 생성
+    # 기존 테이블 삭제 (오래된 스키마 지우기)
+    cursor.execute("DROP TABLE IF EXISTS subscribers")
+    cursor.execute("DROP TABLE IF EXISTS cached_newsletters")
+
+    # 새 테이블 생성
     cursor.execute(
         """
-        CREATE TABLE IF NOT EXISTS subscribers (
+        CREATE TABLE subscribers (
             id TEXT PRIMARY KEY,
             email TEXT UNIQUE NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -51,25 +55,13 @@ def init_db():
     )
     cursor.execute(
         """
-        CREATE TABLE IF NOT EXISTS cached_newsletters (
+        CREATE TABLE cached_newsletters (
             date_str TEXT PRIMARY KEY,
             summaries_json TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """
     )
-
-    # 기존 테이블에 누락된 컬럼 추가 (오래된 db 있을 때)
-    try:
-        cursor.execute("ALTER TABLE subscribers ADD COLUMN is_active INTEGER DEFAULT 1")
-    except sqlite3.OperationalError:
-        # 컬럼이 이미 있으면 오류가 나니까 그냥 넘어가기
-        pass
-
-    try:
-        cursor.execute("ALTER TABLE subscribers ADD COLUMN unsubscribe_token TEXT UNIQUE")
-    except sqlite3.OperationalError:
-        pass
 
     conn.commit()
     conn.close()
