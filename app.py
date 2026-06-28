@@ -3,8 +3,8 @@ import os
 
 from flask import Flask, jsonify, render_template, request
 
-from database import add_subscriber, get_newsletter, init_db, unsubscribe, get_active_subscribers
-from main import BRAND_NAME, PREVIEW_COUNT, subscribe_and_send_welcome, build_newsletter, send_newsletter_email
+from database import add_subscriber, get_newsletter, init_db, unsubscribe
+from main import BRAND_NAME, PREVIEW_COUNT, subscribe_and_send_welcome
 
 app = Flask(__name__)
 
@@ -65,41 +65,6 @@ def unsubscribe_view(token: str):
         success=email is not None,
         email=email,
     )
-
-
-@app.post("/send-daily")
-def send_daily():
-    """매일 정해진 시간에 호출되어 모든 구독자에게 뉴스레터를 발송합니다."""
-    # 간단한 인증 (환경변수로 비밀번호 설정 권장)
-    auth_header = request.headers.get("Authorization")
-    SECRET_KEY = os.environ.get("CRON_SECRET", "your-secret-key-change-this")
-    
-    if auth_header != f"Bearer {SECRET_KEY}":
-        return jsonify({"success": False, "message": "Unauthorized"}), 401
-    
-    try:
-        newsletter = build_newsletter()
-        if not newsletter:
-            return jsonify({"success": True, "message": "발송할 뉴스가 없습니다."})
-        
-        subscribers = get_active_subscribers()
-        if not subscribers:
-            return jsonify({"success": True, "message": "활성 구독자가 없습니다."})
-        
-        for subscriber in subscribers:
-            send_newsletter_email(
-                newsletter["summaries"],
-                subscriber["email"],
-                subscriber["token"],
-                newsletter["date"],
-            )
-        
-        return jsonify({
-            "success": True,
-            "message": f"{newsletter['date']} 뉴스레터 {len(subscribers)}명 발송 완료"
-        })
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 500
 
 
 if __name__ == "__main__":
