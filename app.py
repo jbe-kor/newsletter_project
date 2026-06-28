@@ -1,16 +1,14 @@
-import re
 import os
 import traceback
+from flask import Flask, render_template, request, jsonify
 
-from flask import Flask, jsonify, render_template, request
-
-from database import add_subscriber, get_cached_newsletter as get_newsletter, init_db, unsubscribe
+from database import add_subscriber, get_cached_newsletter as get_newsletter, init_db
 from main import BRAND_NAME, PREVIEW_COUNT, subscribe_and_send_welcome
 
 app = Flask(__name__)
+BASE_URL = os.getenv("BASE_URL", "http://localhost:5000")
 
-EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
-
+# 초기화
 init_db()
 
 
@@ -18,60 +16,45 @@ init_db()
 def index():
     return render_template("index.html", brand_name=BRAND_NAME)
 
+
 @app.post("/subscribe")
-@app.post("/send")
 def subscribe():
-    email = request.form.get("email", "").strip().lower()
-    if not EMAIL_PATTERN.match(email):
-        return jsonify({"success": False, "message": "올바른 이메일 주소를 입력해 주세요."}), 400
+    email = request.form.get("email")
+    if not email:
+        return render_template("index.html", error="이메일을 입력해주세요.", brand_name=BRAND_NAME)
 
     try:
         subscriber = add_subscriber(email)
-        result = subscribe_and_send_welcome(email, subscriber.unsubscribe_token)
-        return jsonify(result), 200
-    except Exception as exc:
-        print("="*50)
-        print("ERROR OCCURRED:")
+        subscribe_and_send_welcome(email, subscriber.unsubscribe_token)
+        return render_template("index.html", success="구독이 완료되었습니다! 메일을 확인해주세요.", brand_name=BRAND_NAME)
+    except Exception as e:
+        error_msg = f"구독 처리 중 오류: {str(e)}"
+        print(error_msg)
         traceback.print_exc()
-        print("="*50)
-        return jsonify({"success": False, "message": f"구독 처리 중 오류: {exc}"}), 500
+        return render_template("index.html", error=error_msg, brand_name=BRAND_NAME)
 
 
-@app.get("/newsletter/<news_date>")
-def newsletter_view(news_date: str):
-    summaries = get_newsletter(news_date)
-    if not summaries:
-        return render_template(
-            "newsletter.html",
-            brand_name=BRAND_NAME,
-            news_date=news_date,
-            summaries=[],
-            preview_count=PREVIEW_COUNT,
-            not_found=True,
-        ), 404
+@app.get("/newsletter/<date_str>")
+def newsletter(date_str):
+    cached = get_newsletter(date_str)
+    if not cached:
+        return "뉴스레터를 찾을 수 없습니다.", 404
 
-    return render_template(
-        "newsletter.html",
-        brand_name=BRAND_NAME,
-        news_date=news_date,
-        summaries=summaries,
-        preview_count=PREVIEW_COUNT,
-        not_found=False,
-    )
+    import json
+    summaries = json.loads(cached.summaries_json)
+    return render_template("newsletter.html", summaries=summaries[:PREVIEW_COUNT], more_summaries=summaries[PREVIEW_COUNT:], date_str=date_str, brand_name=BRAND_NAME, base_url=BASE_URL)
 
 
 @app.get("/unsubscribe/<token>")
-def unsubscribe_view(token: str):
-    email = unsubscribe(token)
-    return render_template(
-        "unsubscribe.html",
-        brand_name=BRAND_NAME,
-        success=email is not None,
-        email=email,
-    )
+def unsubscribe_page(token):
+    from database import get_subscriber_by_token, unsubscribe
+    subscriber = get_subscriber_by_token(token)
+    if not subscriber:
+        return "유효하지 않은 토큰입니다.", 404
+
+    unsubscribed = unsubscribe(token)
+    return render_template("unsubscribe.html", success=unsubscribed, brand_name=BRAND_NAME)
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=False, host="0.0.0.0", port=port, use_reloader=False)
-
+    app.run(debug=True, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
