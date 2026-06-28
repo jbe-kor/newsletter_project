@@ -1,9 +1,10 @@
 import re
 import os
+import traceback
 
 from flask import Flask, jsonify, render_template, request
 
-from database import add_subscriber, get_newsletter, init_db, unsubscribe
+from database import add_subscriber, get_cached_newsletter as get_newsletter, init_db, unsubscribe
 from main import BRAND_NAME, PREVIEW_COUNT, subscribe_and_send_welcome
 
 app = Flask(__name__)
@@ -30,6 +31,10 @@ def subscribe():
         result = subscribe_and_send_welcome(email, token)
         return jsonify(result), 200
     except Exception as exc:
+        print("="*50)
+        print("ERROR OCCURRED:")
+        traceback.print_exc()
+        print("="*50)
         return jsonify({"success": False, "message": f"구독 처리 중 오류: {exc}"}), 500
 
 
