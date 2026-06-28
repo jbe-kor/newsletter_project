@@ -1,3 +1,6 @@
+import re
+EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+
 import os
 import traceback
 from flask import Flask, render_template, request, jsonify
@@ -18,20 +21,22 @@ def index():
 
 
 @app.post("/subscribe")
+@app.post("/send")
 def subscribe():
-    email = request.form.get("email")
-    if not email:
-        return render_template("index.html", error="이메일을 입력해주세요.", brand_name=BRAND_NAME)
+    email = request.form.get("email", "").strip().lower()
+    if not EMAIL_PATTERN.match(email):
+        return jsonify({"success": False, "message": "올바른 이메일 주소를 입력해 주세요."}), 400
 
     try:
         subscriber = add_subscriber(email)
-        subscribe_and_send_welcome(email, subscriber.unsubscribe_token)
-        return render_template("index.html", success="구독이 완료되었습니다! 메일을 확인해주세요.", brand_name=BRAND_NAME)
-    except Exception as e:
-        error_msg = f"구독 처리 중 오류: {str(e)}"
-        print(error_msg)
+        result = subscribe_and_send_welcome(email, subscriber.unsubscribe_token)
+        return jsonify(result), 200
+    except Exception as exc:
+        print("="*50)
+        print("ERROR OCCURRED:")
         traceback.print_exc()
-        return render_template("index.html", error=error_msg, brand_name=BRAND_NAME)
+        print("="*50)
+        return jsonify({"success": False, "message": f"구독 처리 중 오류: {exc}"}), 500
 
 
 @app.get("/newsletter/<date_str>")
