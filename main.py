@@ -240,7 +240,7 @@ def build_newsletter() -> dict | None:
 
     summaries = summarize_with_gemini(news_data)
 
-    save_newsletter(news_date, summaries)
+    save_newsletter(news_date, json.dumps(summaries))
 
     return {"date": news_date, "summaries": summaries}
 
