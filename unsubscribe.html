@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>구독 취소 · {{ brand_name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="page">
+    <section class="card">
+      <p class="badge">{{ brand_name }}</p>
+      <h1>구독 취소</h1>
+
+      {% if success %}
+        <div class="status success">
+          <strong>{{ email }}</strong> 구독이 취소되었습니다.<br>
+          더 이상 {{ brand_name }} 뉴스레터를 받지 않습니다.
+        </div>
+      {% else %}
+        <div class="status error">
+          유효하지 않거나 이미 취소된 구독 링크입니다.
+        </div>
+      {% endif %}
+
+      <a class="back-link" href="{{ url_for('index') }}">← 구독 페이지로 돌아가기</a>
+    </section>
+  </main>
+</body>
+</html>
