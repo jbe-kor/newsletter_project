@@ -24,8 +24,7 @@ from google import genai
 
 
 
-from database import get_newsletter, save_newsletter
-
+from database import get_cached_newsletter as get_newsletter, cache_newsletter as save_newsletter
 
 
 KST = ZoneInfo("Asia/Seoul")
