@@ -18,7 +18,6 @@ init_db()
 def index():
     return render_template("index.html", brand_name=BRAND_NAME)
 
-
 @app.post("/subscribe")
 @app.post("/send")
 def subscribe():
@@ -27,8 +26,8 @@ def subscribe():
         return jsonify({"success": False, "message": "올바른 이메일 주소를 입력해 주세요."}), 400
 
     try:
-        token, _is_new = add_subscriber(email)
-        result = subscribe_and_send_welcome(email, token)
+        subscriber = add_subscriber(email)
+        result = subscribe_and_send_welcome(email, subscriber.unsubscribe_token)
         return jsonify(result), 200
     except Exception as exc:
         print("="*50)
