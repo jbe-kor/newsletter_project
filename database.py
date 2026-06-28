@@ -37,6 +37,7 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # 테이블 생성
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS subscribers (
@@ -58,9 +59,20 @@ def init_db():
     """
     )
 
+    # 기존 테이블에 누락된 컬럼 추가 (오래된 db 있을 때)
+    try:
+        cursor.execute("ALTER TABLE subscribers ADD COLUMN is_active INTEGER DEFAULT 1")
+    except sqlite3.OperationalError:
+        # 컬럼이 이미 있으면 오류가 나니까 그냥 넘어가기
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE subscribers ADD COLUMN unsubscribe_token TEXT UNIQUE")
+    except sqlite3.OperationalError:
+        pass
+
     conn.commit()
     conn.close()
-
 
 # --- 구독자 관리 ---
 def add_subscriber(email: str) -> Subscriber:
