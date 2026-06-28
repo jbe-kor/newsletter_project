@@ -467,80 +467,40 @@ def build_plain_report(
 
 
 def send_newsletter_email(
-
     summaries: list[dict],
-
     recipient_email: str,
-
     unsubscribe_token: str | None = None,
-
     news_date: str | None = None,
-
 ) -> None:
-
     """요약된 리포트를 HTML 이메일로 발송"""
+    import os
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail, HtmlContent, PlainTextContent
 
     news_date = news_date or str(_yesterday_kst())
-
     unsubscribe_url = (
-
         f"{BASE_URL}/unsubscribe/{unsubscribe_token}" if unsubscribe_token else None
-
     )
-
     view_all_url = f"{BASE_URL}/newsletter/{news_date}"
 
-
-
     print(f"[INFO] {recipient_email} 로 {BRAND_NAME} 발송 중...")
+    SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 
-
-
-    msg = MIMEMultipart("alternative")
-
-    msg["Subject"] = f"{BRAND_NAME}"
-
-    msg["From"] = SENDER_EMAIL
-
-    msg["To"] = recipient_email
-
-    msg.attach(
-
-        MIMEText(
-
-            build_plain_report(summaries, news_date, unsubscribe_url, view_all_url),
-
-            "plain",
-
-            "utf-8",
-
-        )
-
+    message = Mail(
+        from_email=SENDER_EMAIL,
+        to_emails=recipient_email,
+        subject=f"{BRAND_NAME}",
+        plain_text_content=PlainTextContent(build_plain_report(summaries, news_date, unsubscribe_url, view_all_url)),
+        html_content=HtmlContent(build_html_report(summaries, news_date, unsubscribe_url, view_all_url))
     )
 
-    msg.attach(
-
-        MIMEText(
-
-            build_html_report(summaries, news_date, unsubscribe_url, view_all_url),
-
-            "html",
-
-            "utf-8",
-
-        )
-
-    )
-
-
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-
-        server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
-
-    print("[SUCCESS] 이메일 발송 성공!")
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        response = sg.send(message)
+        print(f"[SUCCESS] 이메일 발송 성공! Status code: {response.status_code}")
+    except Exception as e:
+        print(f"[ERROR] 이메일 발송 실패: {str(e)}")
+        raise
 
 
 
