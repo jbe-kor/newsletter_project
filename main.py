@@ -223,10 +223,9 @@ def build_newsletter() -> dict | None:
     news_date = str(_yesterday_kst())
 
     cached = get_newsletter(news_date)
-
     if cached:
-
-        return {"date": news_date, "summaries": cached}
+        summaries_json = cached.summaries_json  # 이렇게 .속성으로 접근하자!
+        summaries = json.loads(summaries_json)
 
 
 
