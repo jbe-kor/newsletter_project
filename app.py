@@ -47,7 +47,7 @@ def newsletter(date_str):
 
     import json
     summaries = json.loads(cached.summaries_json)
-    return render_template("newsletter.html", summaries=summaries[:PREVIEW_COUNT], more_summaries=summaries[PREVIEW_COUNT:], date_str=date_str, brand_name=BRAND_NAME, base_url=BASE_URL)
+    return render_template("newsletter.html", summaries=summaries, news_date=date_str, preview_count=PREVIEW_COUNT, brand_name=BRAND_NAME, base_url=BASE_URL)
 
 
 @app.get("/unsubscribe/<token>")
