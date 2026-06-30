@@ -11,6 +11,9 @@ from main import BRAND_NAME, PREVIEW_COUNT, subscribe_and_send_welcome
 app = Flask(__name__)
 BASE_URL = os.getenv("BASE_URL", "http://localhost:5000")
 
+# 초기화
+init_db()
+
 
 @app.get("/")
 def index():
