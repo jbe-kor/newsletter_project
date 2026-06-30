@@ -37,14 +37,10 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # 기존 테이블 삭제 (오래된 스키마 지우기)
-    cursor.execute("DROP TABLE IF EXISTS subscribers")
-    cursor.execute("DROP TABLE IF EXISTS cached_newsletters")
-
-    # 새 테이블 생성
+    # 테이블이 없으면 생성 (기존 데이터 보존)
     cursor.execute(
         """
-        CREATE TABLE subscribers (
+        CREATE TABLE IF NOT EXISTS subscribers (
             id TEXT PRIMARY KEY,
             email TEXT UNIQUE NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -55,7 +51,7 @@ def init_db():
     )
     cursor.execute(
         """
-        CREATE TABLE cached_newsletters (
+        CREATE TABLE IF NOT EXISTS cached_newsletters (
             date_str TEXT PRIMARY KEY,
             summaries_json TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

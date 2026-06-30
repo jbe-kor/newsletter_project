@@ -121,6 +121,9 @@ def fetch_semiconductor_news() -> list[dict]:
 
         news_list.append({"title": title, "link": link, "published": str(published_date)})
 
+        if len(news_list) >= 10:
+            break
+
 
 
     print(f"  → {len(news_list)}건 수집")
@@ -224,8 +227,9 @@ def build_newsletter() -> dict | None:
 
     cached = get_newsletter(news_date)
     if cached:
-        summaries_json = cached.summaries_json  # 이렇게 .속성으로 접근하자!
+        summaries_json = cached.summaries_json
         summaries = json.loads(summaries_json)
+        return {"date": news_date, "summaries": summaries}
 
 
 

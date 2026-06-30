@@ -11,9 +11,6 @@ from main import BRAND_NAME, PREVIEW_COUNT, subscribe_and_send_welcome
 app = Flask(__name__)
 BASE_URL = os.getenv("BASE_URL", "http://localhost:5000")
 
-# 초기화
-init_db()
-
 
 @app.get("/")
 def index():
@@ -36,6 +33,14 @@ def subscribe():
         print("ERROR OCCURRED:")
         traceback.print_exc()
         print("="*50)
+        
+        error_msg = str(exc)
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+            return jsonify({
+                "success": False,
+                "message": "현재 AI 요청 한도를 초과했습니다. 잠시 후 다시 시도해 주세요."
+            }), 429
+        
         return jsonify({"success": False, "message": f"구독 처리 중 오류: {exc}"}), 500
 
 
@@ -58,7 +63,7 @@ def unsubscribe_page(token):
         return "유효하지 않은 토큰입니다.", 404
 
     unsubscribed = unsubscribe(token)
-    return render_template("unsubscribe.html", success=unsubscribed, brand_name=BRAND_NAME)
+    return render_template("unsubscribe.html", success=unsubscribed, brand_name=BRAND_NAME, email=subscriber.email)
 
 
 if __name__ == "__main__":
